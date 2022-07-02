@@ -1,8 +1,18 @@
 [package]
-name = "erc721-metadata"
+name = "nft-metadata"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+hex = "0.4.3"
+rgb = "0.8.33"
+serde = { version = "1.0.137", optional = true, features = ["derive"] }
+url = "2.2.2"
+
+[features]
+serde = ["dep:serde", "url/serde", "hex/serde"]
+
+[dev-dependencies]
+serde_json = "1.0.82"
