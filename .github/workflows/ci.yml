@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Update Rust
+      run: rustup update stable
+    - name: Clippy
+      run: cargo clippy --features "serde" -- -D warnings
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Update Rust
+      run: rustup update stable
+    - name: Format
+      run: cargo fmt --features "serde" -- --check
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Update Rust
+      run: rustup update stable
+    - name: Format
+      run: cargo test --features "serde" --verbose
+      
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Update Rust
+      run: rustup update stable
+    - name: Build
+      run: cargo build --features "serde" --verbose
