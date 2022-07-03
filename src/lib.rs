@@ -28,7 +28,8 @@ pub struct Metadata {
     /// Attributes for the item.
     pub attributes: Vec<AttributeEntry>,
     /// Background color of the item.
-    #[cfg_attr(feature = "serde", serde(with = "rgb8_fromstr_radix_16"))]
+    /// When serialized, it takes the form of a 6-character hexadecimal string without a `#`.
+    #[cfg_attr(feature = "serde", serde(with = "rgb8_fromhex"))]
     pub background_color: RGB8,
     /// URL to multi-media attachment for the item.
     pub animation_url: Url,
@@ -82,20 +83,15 @@ pub enum DisplayType {
 }
 
 #[cfg(feature = "serde")]
-mod rgb8_fromstr_radix_16 {
+mod rgb8_fromhex {
     use rgb::{ComponentSlice, RGB8};
-    use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
-
-    #[derive(Serialize, Deserialize)]
-    #[serde(transparent)]
-    struct Helper(#[serde(with = "hex")] Vec<u8>);
+    use serde::{de::Error, Deserializer, Serializer};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<RGB8, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let s: Helper = Deserialize::deserialize(deserializer)?;
-        let s = s.0;
+        let s: Vec<u8> = hex::deserialize(deserializer)?;
         if s.len() != 3 {
             Err(D::Error::custom("expected color hex string"))
         } else {
@@ -111,7 +107,7 @@ mod rgb8_fromstr_radix_16 {
     where
         S: Serializer,
     {
-        Helper(value.as_slice().to_vec()).serialize(serializer)
+        hex::serialize(value.as_slice().to_vec(), serializer)
     }
 
     #[cfg(test)]
@@ -121,7 +117,7 @@ mod rgb8_fromstr_radix_16 {
 
         #[derive(Serialize, Deserialize, Debug)]
         struct Target {
-            #[serde(with = "crate::rgb8_fromstr_radix_16")]
+            #[serde(with = "crate::rgb8_fromhex")]
             color: RGB8,
         }
 
