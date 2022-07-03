@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Update Rust
       run: rustup update stable
-    - name: Format
+    - name: Test
       run: cargo test --features "serde" --verbose
       
   build:
