@@ -29,7 +29,7 @@ pub struct Metadata {
     /// Name of the item.
     pub name: String,
     /// Attributes for the item.
-    #[serde(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub attributes: Vec<AttributeEntry>,
     /// Background color of the item.
     /// When serialized, it takes the form of a 6-character hexadecimal string without a `#`.
