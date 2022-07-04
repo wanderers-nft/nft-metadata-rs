@@ -1,6 +1,6 @@
 #![deny(missing_docs)]
 
-//! Type definitions for non-fungible token (NFT) metadata.
+//! Type definitions for ERC-based non-fungible token (NFT) metadata.
 //!
 //! While [EIP-721](https://eips.ethereum.org/EIPS/eip-721#specification) defines a "ERC-721 Metadata JSON Schema", in practice
 //! it is rarely used. Instead, this crate implements the more popular [OpenSea metadata standard](https://docs.opensea.io/docs/metadata-standards).
