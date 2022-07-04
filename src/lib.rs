@@ -18,7 +18,7 @@ use url::Url;
 /// While even an empty object is "valid" metadata, this crate takes a more opinionated approach.
 /// The following fields are strictly required: [`name`](Metadata::name), [`description`](Metadata::description), [`image`](Metadata::image).
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Metadata {
     /// URL to image of the item.
     pub image: Url,
@@ -48,7 +48,7 @@ pub struct Metadata {
     serde(rename_all = "snake_case"),
     serde(untagged)
 )]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AttributeEntry {
     /// Textual attribute.
     String {
@@ -74,7 +74,7 @@ pub enum AttributeEntry {
     derive(Serialize, Deserialize),
     serde(rename_all = "snake_case")
 )]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum DisplayType {
     /// As a number.
     Number,
