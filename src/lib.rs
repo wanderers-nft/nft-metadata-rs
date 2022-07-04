@@ -14,27 +14,31 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 /// Metadata for a token.
+///
+/// While even an empty object is "valid" metadata, this crate takes a more opinionated approach.
+/// The following fields are strictly required: [`name`](Metadata::name), [`description`](Metadata::description), [`image`](Metadata::image).
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub struct Metadata {
     /// URL to image of the item.
     pub image: Url,
     /// External URL to another site.
-    pub external_url: Url,
+    pub external_url: Option<Url>,
     /// Human-readable description of the item.
     pub description: String,
     /// Name of the item.
     pub name: String,
     /// Attributes for the item.
+    #[serde(default)]
     pub attributes: Vec<AttributeEntry>,
     /// Background color of the item.
     /// When serialized, it takes the form of a 6-character hexadecimal string without a `#`.
-    #[cfg_attr(feature = "serde", serde(with = "rgb8_fromhex"))]
-    pub background_color: RGB8,
+    #[cfg_attr(feature = "serde", serde(with = "rgb8_fromhex_opt", default))]
+    pub background_color: Option<RGB8>,
     /// URL to multi-media attachment for the item.
-    pub animation_url: Url,
+    pub animation_url: Option<Url>,
     /// URL to a YouTube video.
-    pub youtube_url: Url,
+    pub youtube_url: Option<Url>,
 }
 
 /// A key-value pair of attributes for an item.
@@ -83,11 +87,11 @@ pub enum DisplayType {
 }
 
 #[cfg(feature = "serde")]
-mod rgb8_fromhex {
+mod rgb8_fromhex_opt {
     use rgb::{ComponentSlice, RGB8};
-    use serde::{de::Error, Deserializer, Serializer};
+    use serde::{de::Error, Deserializer, Serialize, Serializer};
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<RGB8, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<RGB8>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -95,19 +99,22 @@ mod rgb8_fromhex {
         if s.len() != 3 {
             Err(D::Error::custom("expected color hex string"))
         } else {
-            Ok(RGB8 {
+            Ok(Some(RGB8 {
                 r: s[0],
                 g: s[1],
                 b: s[2],
-            })
+            }))
         }
     }
 
-    pub fn serialize<S>(value: &RGB8, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(value: &Option<RGB8>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        hex::serialize(value.as_slice().to_vec(), serializer)
+        match value {
+            Some(value) => hex::serialize(value.as_slice().to_vec(), serializer),
+            None => None::<()>.serialize(serializer),
+        }
     }
 
     #[cfg(test)]
@@ -117,8 +124,8 @@ mod rgb8_fromhex {
 
         #[derive(Serialize, Deserialize, Debug)]
         struct Target {
-            #[serde(with = "crate::rgb8_fromhex")]
-            color: RGB8,
+            #[serde(with = "crate::rgb8_fromhex_opt")]
+            color: Option<RGB8>,
         }
 
         #[test]
@@ -127,22 +134,22 @@ mod rgb8_fromhex {
             let target: Target = serde_json::from_str(s).unwrap();
             assert_eq!(
                 target.color,
-                RGB8 {
+                Some(RGB8 {
                     r: 242,
                     g: 242,
                     b: 242
-                }
+                })
             );
         }
 
         #[test]
         fn to_json() {
             let target = Target {
-                color: RGB8 {
+                color: Some(RGB8 {
                     r: 242,
                     g: 242,
                     b: 242,
-                },
+                }),
             };
             let s = serde_json::to_string(&target).unwrap();
             assert_eq!(s, r#"{"color":"f2f2f2"}"#)
@@ -154,5 +161,59 @@ mod rgb8_fromhex {
             let target = serde_json::from_str::<Target>(s);
             assert!(target.is_err());
         }
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg(test)]
+mod tests {
+    use crate::Metadata;
+
+    const PLANETPASS_ITEM: &str = r#"
+    {
+        "image": "https://assets.wanderers.ai/file/planetpass/vid/0/0.mp4",
+        "description": "Visit this planet and get a free Rocketeer NFT from Alucard.eth!",
+        "name": "Rocketeer X",
+        "attributes": [
+          {
+            "trait_type": "Core",
+            "value": "Vortex"
+          },
+          {
+            "trait_type": "Satellite",
+            "value": "Protoplanets"
+          },
+          {
+            "trait_type": "Feature",
+            "value": "Icy"
+          },
+          {
+            "trait_type": "Ship",
+            "value": "Docking"
+          },
+          {
+            "trait_type": "Space",
+            "value": "Green Sun"
+          },
+          {
+            "trait_type": "Terrain",
+            "value": "Layers"
+          },
+          {
+            "trait_type": "Faction",
+            "value": "Coalition for Uncorrupted Biology"
+          },
+          {
+            "trait_type": "Atmosphere",
+            "value": "Alpen Glow"
+          }
+        ]
+      }
+    "#;
+
+    #[test]
+    pub fn planetpass() {
+        let metadata = serde_json::from_str::<Metadata>(PLANETPASS_ITEM);
+        assert!(metadata.is_ok());
     }
 }
