@@ -95,15 +95,22 @@ mod rgb8_fromhex_opt {
     where
         D: Deserializer<'de>,
     {
-        let s: Vec<u8> = hex::deserialize(deserializer)?;
-        if s.len() != 3 {
-            Err(D::Error::custom("expected color hex string"))
-        } else {
-            Ok(Some(RGB8 {
-                r: s[0],
-                g: s[1],
-                b: s[2],
-            }))
+        match hex::deserialize(deserializer)
+            .map::<Option<Vec<_>>, _>(Some)
+            .unwrap_or_default()
+        {
+            Some(s) => {
+                if s.len() != 3 {
+                    Err(D::Error::custom("expected color hex string"))
+                } else {
+                    Ok(Some(RGB8 {
+                        r: s[0],
+                        g: s[1],
+                        b: s[2],
+                    }))
+                }
+            }
+            None => Ok(None),
         }
     }
 
@@ -160,6 +167,13 @@ mod rgb8_fromhex_opt {
             let s = r#"{ "color": "f2f2f2f2" }"#;
             let target = serde_json::from_str::<Target>(s);
             assert!(target.is_err());
+        }
+
+        #[test]
+        fn from_null_json() {
+            let s = r#"{ "color": null }"#;
+            let target = serde_json::from_str::<Target>(s).unwrap();
+            assert!(target.color.is_none());
         }
     }
 }
